@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Головна</title>
+</head>
+<body>
+<h1 id="status">Завантаження...</h1>
+<div id="userInfo" style="display: none;">
+    <p><strong>User ID:</strong> <span id="userId"></span></p>
+</div>
+<button id="loginBtn" onclick="window.location.href='/login'" style="display: none;">
+    Увійти
+</button>
+
+<script>
+    fetch('/status')
+        .then(res => res.json())
+        .then(data => {
+            if (data.loggedIn) {
+                document.getElementById('status').innerText = "Ви авторизовані!";
+                fetch('/me')
+                    .then(res => res.json())
+                    .then(info => {
+                        document.getElementById('userId').innerText = info.sub || 'невідомо';
+                        document.getElementById('userInfo').style.display = 'block';
+                    });
+            } else {
+                document.getElementById('status').innerText = "Ви не авторизовані.";
+                document.getElementById('loginBtn').style.display = 'inline-block';
+            }
+        })
+        .catch(() => {
+            document.getElementById('status').innerText = "Помилка перевірки статусу.";
+        });
+</script>
+</body>
+</html>
