@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -6,11 +7,15 @@
 </head>
 <body>
 <h1 id="status">Завантаження...</h1>
+
 <div id="userInfo" style="display: none;">
     <p><strong>User ID:</strong> <span id="userId"></span></p>
+    <button id="wsBtn">Отримати курс BTC/USDT</button>
+    <p><strong>Курс:</strong> <span id="btcPrice">—</span></p>
 </div>
+
 <button id="loginBtn" onclick="window.location.href='/login'" style="display: none;">
-    Увійти
+    🔐 Увійти
 </button>
 
 <script>
@@ -18,7 +23,7 @@
         .then(res => res.json())
         .then(data => {
             if (data.loggedIn) {
-                document.getElementById('status').innerText = "Ви авторизовані!";
+                document.getElementById('status').innerText = "✅ Ви авторизовані!";
                 fetch('/me')
                     .then(res => res.json())
                     .then(info => {
@@ -26,13 +31,32 @@
                         document.getElementById('userInfo').style.display = 'block';
                     });
             } else {
-                document.getElementById('status').innerText = "Ви не авторизовані.";
+                document.getElementById('status').innerText = "❌ Ви не авторизовані.";
                 document.getElementById('loginBtn').style.display = 'inline-block';
             }
         })
         .catch(() => {
-            document.getElementById('status').innerText = "Помилка перевірки статусу.";
+            document.getElementById('status').innerText = "⚠️ Помилка перевірки статусу.";
         });
+
+    // WebSocket logic
+    document.getElementById("wsBtn").addEventListener("click", () => {
+        const socket = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@trade");
+
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            const price = parseFloat(data.p).toFixed(2);
+            document.getElementById("btcPrice").innerText = price + " USDT";
+        };
+
+        socket.onerror = function(error) {
+            document.getElementById("btcPrice").innerText = "Помилка WebSocket";
+        };
+
+        socket.onclose = function() {
+            document.getElementById("btcPrice").innerText += "(з'єднання закрито)";
+        };
+    });
 </script>
 </body>
 </html>
