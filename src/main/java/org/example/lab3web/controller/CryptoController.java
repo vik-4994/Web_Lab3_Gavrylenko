@@ -1,34 +1,29 @@
 package org.example.lab3web.controller;
 
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.http.ResponseEntity;
+import lombok.RequiredArgsConstructor;
+import org.example.lab3web.binance.BinanceTickerMessage;
+import org.example.lab3web.tickers.Coin;
+import org.example.lab3web.tickers.TickerUpdateListener;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/crypto")
+@RequiredArgsConstructor
 public class CryptoController {
 
-    @GetMapping("/status")
-    public ResponseEntity<Map<String, Object>> getStatus(HttpServletRequest request) {
-        Map<String, Object> result = new HashMap<>();
-        boolean loggedIn = false;
+    private final TickerUpdateListener listener;
 
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if ("access_token".equals(cookie.getName())) {
-                    loggedIn = true;
-                    break;
-                }
-            }
-        }
-
-        result.put("loggedIn", loggedIn);
-        return ResponseEntity.ok(result);
+    @GetMapping
+    public Map<String, BinanceTickerMessage> getAllPrices() {
+        return listener.getAllPrices().entrySet().stream()
+                .collect(Collectors.toMap(
+                        entry -> entry.getKey(), // Coin.BTC → "BTC"
+                        Map.Entry::getValue
+                ));
     }
 }

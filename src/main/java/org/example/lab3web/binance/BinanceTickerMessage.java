@@ -25,6 +25,4 @@ public class BinanceTickerMessage {
 
     @JsonProperty("v")
     private String volume;
-
-    // Додатково можеш додати інші поля, які надсилає Binance
 }

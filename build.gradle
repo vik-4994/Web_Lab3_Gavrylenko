@@ -40,6 +40,9 @@ dependencies {
     implementation 'org.webjars:sockjs-client:1.5.1'
     implementation 'org.webjars:stomp-websocket:2.3.4'
     implementation 'org.springframework:spring-websocket'
+    implementation 'org.springframework:spring-websocket:6.1.4'
+    implementation 'org.springframework:spring-messaging:6.1.4'
+
 }
 
 tasks.named('test') {
