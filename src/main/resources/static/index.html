@@ -29,39 +29,32 @@
 </button>
 
 <script>
-    function updatePrices() {
-        fetch('/api/crypto')
-            .then(res => res.json())
-            .then(data => {
-                console.log(data);
-                const tbody = document.getElementById("priceTable");
-                tbody.innerHTML = '';
-                Object.entries(data).forEach(([symbol, info]) => {
-                    const row = document.createElement('tr');
+    const allPrices = {}; // Зберігає дані по всім монетам
 
-                    const symbolCell = document.createElement('td');
-                    symbolCell.innerText = info.s; // "s" — це symbol
-                    row.appendChild(symbolCell);
+    function updateTable() {
+        const tbody = document.getElementById("priceTable");
+        tbody.innerHTML = '';
+        Object.entries(allPrices).forEach(([symbol, info]) => {
+            const row = document.createElement('tr');
 
-                    const priceCell = document.createElement('td');
-                    priceCell.innerText = info.c; // "c" — current price
-                    row.appendChild(priceCell);
+            const symbolCell = document.createElement('td');
+            symbolCell.innerText = symbol;
+            row.appendChild(symbolCell);
 
-                    const changeCell = document.createElement('td');
-                    changeCell.innerText = info.P + '%'; // "P" — percent change
-                    row.appendChild(changeCell);
+            const priceCell = document.createElement('td');
+            priceCell.innerText = info.currentPrice;
+            row.appendChild(priceCell);
 
-                    const volumeCell = document.createElement('td');
-                    volumeCell.innerText = info.v; // "v" — volume
-                    row.appendChild(volumeCell);
+            const changeCell = document.createElement('td');
+            changeCell.innerText = info.priceChangePercent + '%';
+            row.appendChild(changeCell);
 
-                    tbody.appendChild(row);
-                });
-            })
-            .catch(() => {
-                const tbody = document.getElementById("priceTable");
-                tbody.innerHTML = '<tr><td colspan="4">Помилка завантаження</td></tr>';
-            });
+            const volumeCell = document.createElement('td');
+            volumeCell.innerText = info.volume;
+            row.appendChild(volumeCell);
+
+            tbody.appendChild(row);
+        });
     }
 
     fetch('/status')
@@ -75,8 +68,40 @@
                     .then(res => res.json())
                     .then(info => {
                         document.getElementById('userId').innerText = info.sub || 'невідомо';
-                        updatePrices();
-                        setInterval(updatePrices, 3000);
+
+                        const protocol = location.protocol === "https:" ? "wss" : "ws";
+                        const socket = new WebSocket(`${protocol}://${location.host}/ws/price`);
+
+                        socket.onopen = () => {
+                            console.log("WebSocket підключено до сервера");
+                        };
+
+                        socket.onmessage = (event) => {
+                            try {
+                                const incoming = JSON.parse(event.data);
+
+                                Object.entries(incoming).forEach(([symbol, ticker]) => {
+                                    allPrices[symbol] = {
+                                        currentPrice: ticker.currentPrice || ticker.c,
+                                        priceChangePercent: ticker.priceChangePercent || ticker.P,
+                                        volume: ticker.volume || ticker.v
+                                    };
+                                });
+
+                                updateTable();
+                            } catch (e) {
+                                console.error("Помилка парсингу JSON:", e);
+                            }
+                        };
+
+
+                        socket.onerror = (err) => {
+                            console.error("🚨 WebSocket помилка:", err);
+                        };
+
+                        socket.onclose = () => {
+                            console.warn("🔌 З'єднання WebSocket закрите");
+                        };
                     });
             } else {
                 document.getElementById('status').innerText = "Ви не авторизовані.";
@@ -87,5 +112,7 @@
             document.getElementById('status').innerText = "Помилка перевірки статусу.";
         });
 </script>
+
+
 </body>
 </html>

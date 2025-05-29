@@ -22,7 +22,7 @@ public class CryptoController {
     public Map<String, BinanceTickerMessage> getAllPrices() {
         return listener.getAllPrices().entrySet().stream()
                 .collect(Collectors.toMap(
-                        entry -> entry.getKey(), // Coin.BTC → "BTC"
+                        entry -> entry.getKey(),
                         Map.Entry::getValue
                 ));
     }

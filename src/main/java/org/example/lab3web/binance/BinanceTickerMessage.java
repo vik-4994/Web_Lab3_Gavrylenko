@@ -12,17 +12,27 @@ public class BinanceTickerMessage {
     private String symbol;
 
     @JsonProperty("c")
-    private String currentPrice;
+    private String lastPrice;
 
     @JsonProperty("P")
     private String priceChangePercent;
 
-    @JsonProperty("h")
-    private String highPrice;
-
-    @JsonProperty("l")
-    private String lowPrice;
-
     @JsonProperty("v")
     private String volume;
+
+    public String getSymbol() {
+        return symbol;
+    }
+
+    public String getLastPrice() {
+        return lastPrice;
+    }
+
+    public String getPriceChangePercent() {
+        return priceChangePercent;
+    }
+
+    public String getVolume() {
+        return volume;
+    }
 }

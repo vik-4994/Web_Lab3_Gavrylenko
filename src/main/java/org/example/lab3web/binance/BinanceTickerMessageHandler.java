@@ -1,36 +1,51 @@
 package org.example.lab3web.binance;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.example.lab3web.tickers.TickerUpdateListener;
+import org.example.lab3web.websocket.PriceSocketHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
-public class BinanceTickerMessageHandler {
+public class BinanceTickerMessageHandler extends TextWebSocketHandler {
 
+    private final PriceSocketHandler priceSocketHandler;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final TickerUpdateListener tickerUpdateListener;
 
-    private static final Map<String, String> latestPrices = new ConcurrentHashMap<>();
-
-    public void handleMessage(String payload) {
-        try {
-            BinanceStreamMessage wrapper = objectMapper.readValue(payload, BinanceStreamMessage.class);
-            BinanceTickerMessage tickerMessage = wrapper.getData();
-            tickerUpdateListener.onTickerUpdate(tickerMessage);
-        } catch (Exception e) {
-            log.error("❌ Failed to parse ticker message from Binance: {}", payload, e);
-        }
+    public BinanceTickerMessageHandler(PriceSocketHandler priceSocketHandler) {
+        this.priceSocketHandler = priceSocketHandler;
     }
 
+    @Override
+    public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+        JsonNode root = objectMapper.readTree(message.getPayload());
+        JsonNode dataNode = root.get("data");
 
-    public static Map<String, String> getLatestPrices() {
-        return latestPrices;
+        List<BinanceTickerMessage> tickers;
+        if (dataNode.isArray()) {
+            tickers = objectMapper.convertValue(dataNode, new TypeReference<>() {});
+        } else {
+            BinanceTickerMessage one = objectMapper.convertValue(dataNode, BinanceTickerMessage.class);
+            tickers = List.of(one);
+        }
+
+        Map<String, Object> data = new HashMap<>();
+        for (BinanceTickerMessage ticker : tickers) {
+            data.put(ticker.getSymbol(), Map.of(
+                    "currentPrice", ticker.getLastPrice(),
+                    "priceChangePercent", ticker.getPriceChangePercent(),
+                    "volume", ticker.getVolume()
+            ));
+        }
+
+        String json = objectMapper.writeValueAsString(data);
+        priceSocketHandler.sendToAll(json);
     }
 }

@@ -22,9 +22,9 @@ public class BinanceWebSocketTickerStreamClient extends TextWebSocketHandler {
     }
 
     @Override
-    public void handleTextMessage(WebSocketSession session, TextMessage message) {
+    public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         log.debug("Received: {}", message.getPayload());
-        messageHandler.handleMessage(message.getPayload());
+        messageHandler.handleTextMessage(session, message);
     }
 
     @Override
